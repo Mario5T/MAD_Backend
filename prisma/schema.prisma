@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model MenuDay {
+  id       Int         @id @default(autoincrement())
+  date     DateTime
+  mealType String
+  items    MenuItem[]
+}
+
+model MenuItem {
+  id      Int     @id @default(autoincrement())
+  name    String
+  menuDay MenuDay @relation(fields: [menuDayId], references: [id])
+  menuDayId Int
+}
+
+model Shuttle {
+  id        Int      @id @default(autoincrement())
+  time      String
+  route     String
+  driver    String
+  contact   String
+}
+
