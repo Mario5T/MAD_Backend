@@ -13,21 +13,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id        Int     @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String?
-  email     String? @unique
-  phone     String? @unique
+  email     String?    @unique
+  phone     String?    @unique
   password  String
-  role      String  // "student" | "driver"
+  role      String     
+  feedbacks Feedback[] 
 }
-
 
 model Feedback {
   id        Int      @id @default(autoincrement())
   rating    Int
   comment   String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
 }
+
+
 
 model MenuDay {
   id       Int         @id @default(autoincrement())
@@ -44,10 +48,13 @@ model MenuItem {
 }
 
 model Shuttle {
-  id        Int      @id @default(autoincrement())
-  time      String
-  route     String
-  driver    String
-  contact   String
+  id       Int      @id @default(autoincrement())
+  route    String
+  time     DateTime
+  contact  String
+  lat      Float?   // current latitude
+  lng      Float?   // current longitude
+  updatedAt DateTime @updatedAt
 }
+
 
