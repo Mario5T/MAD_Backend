@@ -18,7 +18,7 @@ app.use("/api/shuttle", shuttleRoutes);
 app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => res.send("Backend running 🚀"));
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.listen(3000, "0.0.0.0", () => {
+  console.log("Server running on http://0.0.0.0:3000");
 });
 
