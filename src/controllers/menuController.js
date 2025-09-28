@@ -68,7 +68,12 @@ export const uploadMenuFile = async (req, res) => {
 
       
       const days = jsonData[1].slice(2).filter(Boolean); 
-      const dates = jsonData[2].slice(2).filter(Boolean); 
+      const dates = jsonData[2].slice(2).filter(Boolean).map(date => {
+        if (typeof date === 'number') {
+          return new Date((date - 25569) * 86400 * 1000);
+        }
+        return new Date(date);
+      }); 
       
       console.log("Parsed days:", days);
       console.log("Parsed dates:", dates);
@@ -107,20 +112,10 @@ export const uploadMenuFile = async (req, res) => {
 
       for (let dayIndex = 0; dayIndex < Math.min(days.length, dates.length); dayIndex++) {
         const day = days[dayIndex];
-        let date;
+        const date = dates[dayIndex];
         
-        try {
-          if (typeof dates[dayIndex] === 'number') {
-            date = new Date((dates[dayIndex] - 25569) * 86400 * 1000);
-          } else {
-            date = new Date(dates[dayIndex]);
-          }
-          
-          if (isNaN(date.getTime())) {
-            date = new Date(); 
-          }
-        } catch (dateError) {
-          console.log("Date parsing error for:", dates[dayIndex], "using current date");
+        if (isNaN(date.getTime())) {
+          console.log("Invalid date for:", day, "using current date");
           date = new Date();
         }
         
