@@ -5,7 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx prisma generate",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "migrate:deploy": "npx prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
@@ -20,5 +23,9 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "prisma": "^6.16.2"
   }
 }
