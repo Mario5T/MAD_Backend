@@ -21,6 +21,6 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/shuttle", shuttleRoutes);
 app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => res.send("Backend running 🚀"));
-app.listen(3000, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
 });
 
