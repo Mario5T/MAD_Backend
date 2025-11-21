@@ -9,37 +9,49 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 export const signup = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
+    const emailRaw = typeof email === "string" ? email.toLowerCase().trim() : undefined;
+    const phoneRaw = typeof phone === "string" ? phone.trim() : undefined;
+    const normEmail = emailRaw ? emailRaw : undefined;
+    const normPhone = phoneRaw ? phoneRaw : undefined;
 
     if (!role || !["student", "driver", "admin"].includes(role)) {
       return res.status(400).json({ error: "Role must be student, driver, or admin" });
     }
 
     if (role === "student") {
-      if (!email || !email.endsWith("@adypu.edu.in")) {
+      if (!normEmail || !normEmail.endsWith("@adypu.edu.in")) {
         return res.status(400).json({ error: "Students must use adypu.edu.in email" });
       }
     }
 
     if (role === "driver") {
-      if (!phone) {
+      if (!normPhone) {
         return res.status(400).json({ error: "Drivers must provide a phone number" });
       }
     }
 
     if (role === "admin") {
-      if (!email) {
+      if (!normEmail) {
         return res.status(400).json({ error: "Admins must provide an email address" });
       }
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    const orConditions = [];
+    if (normEmail) orConditions.push({ email: normEmail });
+    if (normPhone) orConditions.push({ phone: normPhone });
+    const existingUser = orConditions.length
+      ? await User.findOne({ $or: orConditions })
+      : null;
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({ name, email, phone, password: hashedPassword, role });
+    const createDoc = { name, password: hashedPassword, role };
+    if (normEmail) createDoc.email = normEmail;
+    if (normPhone) createDoc.phone = normPhone;
+    const user = await User.create(createDoc);
 
     res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
@@ -51,12 +63,19 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, phone, password } = req.body;
+    const emailRaw = typeof email === "string" ? email.toLowerCase().trim() : undefined;
+    const phoneRaw = typeof phone === "string" ? phone.trim() : undefined;
+    const normEmail = emailRaw ? emailRaw : undefined;
+    const normPhone = phoneRaw ? phoneRaw : undefined;
 
-    if (!email && !phone) {
+    if (!normEmail && !normPhone) {
       return res.status(400).json({ error: "Email or phone is required" });
     }
 
-    const user = await User.findOne({ $or: [{ email }, { phone }] });
+    const orConditions = [];
+    if (normEmail) orConditions.push({ email: normEmail });
+    if (normPhone) orConditions.push({ phone: normPhone });
+    const user = await User.findOne({ $or: orConditions });
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
