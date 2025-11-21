@@ -1,4 +1,6 @@
-import prisma from "../db/db.config.js";
+import "../db/db.config.js";
+import MenuDay from "../models/MenuDay.js";
+import MenuItem from "../models/MenuItem.js";
 import xlsx from "xlsx";
 import multer from "multer";
 import path from "path";
@@ -62,8 +64,8 @@ export const uploadMenuFile = async (req, res) => {
         throw new Error("Excel file must have at least 3 rows (header, dates, and data)");
       }
       console.log("Clearing existing menu data...");
-      await prisma.menuItem.deleteMany();
-      await prisma.menuDay.deleteMany();
+      await MenuItem.deleteMany({});
+      await MenuDay.deleteMany({});
       console.log("Existing data cleared");
 
       
@@ -120,15 +122,13 @@ export const uploadMenuFile = async (req, res) => {
         }
         
         console.log(`Creating menu day for ${day} on ${date.toISOString()}`);
-        
-        const menuDay = await prisma.menuDay.create({
-          data: {
-            date,
-            mealType: day.toString(),
-          },
+
+        const menuDay = await MenuDay.create({
+          date,
+          mealType: day.toString(),
         });
-        
-        console.log(`Menu day created with ID: ${menuDay.id}`);
+
+        console.log(`Menu day created with ID: ${menuDay._id}`);
         let itemsCreated = 0;
         for (const mealEntry of mealData) {
           const item = mealEntry.items[dayIndex];
@@ -136,11 +136,9 @@ export const uploadMenuFile = async (req, res) => {
           if (item && item.toString().trim()) {
             const menuItemName = `${mealEntry.category} - ${mealEntry.foodType}: ${item.toString().trim()}`;
             
-            await prisma.menuItem.create({
-              data: {
-                name: menuItemName,
-                menuDayId: menuDay.id,
-              },
+            await MenuItem.create({
+              name: menuItemName,
+              menuDayId: menuDay._id,
             });
             itemsCreated++;
           }
@@ -177,26 +175,19 @@ export const uploadMenuFile = async (req, res) => {
 
 export const getAllMenu = async (req, res) => {
   try {
-    const menuDays = await prisma.menuDay.findMany({
-      include: {
-        items: true,
-      },
-      orderBy: {
-        date: "asc",
-      },
-    });
+    const menuDays = await MenuDay.find({}).sort({ date: 1 }).lean();
     const menuData = {};
-    menuDays.forEach((day) => {
+    for (const day of menuDays) {
       const dayName = day.mealType;
       menuData[dayName] = {
-        date: day.date.toISOString().split("T")[0],
+        date: new Date(day.date).toISOString().split("T")[0],
         meals: {},
       };
-
-      day.items.forEach((item) => {
+      const items = await MenuItem.find({ menuDayId: day._id }).lean();
+      for (const item of items) {
         menuData[dayName].meals[item.name] = item.name;
-      });
-    });
+      }
+    }
 
     res.json(menuData);
   } catch (error) {
@@ -208,18 +199,14 @@ export const getAllMenu = async (req, res) => {
 export const uploadMenu = async (req, res) => {
   try {
     const { day, mealType, item } = req.body;
-    const menuDay = await prisma.menuDay.create({
-      data: {
-        date: new Date(),
-        mealType: mealType,
-      },
+    const menuDay = await MenuDay.create({
+      date: new Date(),
+      mealType: mealType,
     });
     
-    const menuItem = await prisma.menuItem.create({
-      data: {
-        name: item,
-        menuDayId: menuDay.id,
-      },
+    const menuItem = await MenuItem.create({
+      name: item,
+      menuDayId: menuDay._id,
     });
     
     res.status(201).json({ menuDay, menuItem });
@@ -232,11 +219,13 @@ export const uploadMenu = async (req, res) => {
 export const getMenuByDay = async (req, res) => {
   try {
     const { day } = req.params;
-    const menuDays = await prisma.menuDay.findMany({
-      where: { mealType: day },
-      include: { items: true },
-    });
-    res.json(menuDays);
+    const menuDays = await MenuDay.find({ mealType: day }).lean();
+    const result = [];
+    for (const d of menuDays) {
+      const items = await MenuItem.find({ menuDayId: d._id }).lean();
+      result.push({ ...d, items });
+    }
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: "Error fetching menu" });
   }

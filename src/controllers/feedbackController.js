@@ -1,11 +1,10 @@
-import prisma from "../db/db.config.js";
+import "../db/db.config.js";
+import Feedback from "../models/Feedback.js";
 
 export const submitFeedback = async (req, res) => {
   try {
     const { userName, rating, comment } = req.body;
-    const feedback = await prisma.feedback.create({
-      data: { userName, rating, comment },
-    });
+    const feedback = await Feedback.create({ userName, rating, comment });
     res.status(201).json(feedback);
   } catch (error) {
     console.error(error);
@@ -15,9 +14,7 @@ export const submitFeedback = async (req, res) => {
 
 export const getFeedback = async (req, res) => {
   try {
-    const feedbacks = await prisma.feedback.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const feedbacks = await Feedback.find({}).sort({ createdAt: -1 }).lean();
     res.json(feedbacks);
   } catch (error) {
     res.status(500).json({ error: "Error fetching feedback" });

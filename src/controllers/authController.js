@@ -1,4 +1,6 @@
-import prisma from "../db/db.config.js";
+import "../db/db.config.js";
+import User from "../models/User.js";
+import UserSession from "../models/UserSession.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -30,18 +32,14 @@ export const signup = async (req, res) => {
       }
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { phone }] },
-    });
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: { name, email, phone, password: hashedPassword, role },
-    });
+    const user = await User.create({ name, email, phone, password: hashedPassword, role });
 
     res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
@@ -58,9 +56,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Email or phone is required" });
     }
 
-    const user = await prisma.user.findFirst({
-      where: { OR: [{ email }, { phone }] },
-    });
+    const user = await User.findOne({ $or: [{ email }, { phone }] });
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -68,11 +64,11 @@ export const login = async (req, res) => {
     if (!isValid) return res.status(401).json({ error: "Invalid credentials" });
 
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user._id.toString(), role: user.role },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
-    await createSession(user.id, token, req);
+    await createSession(user._id, token, req);
 
     res.json({
       message: "Login successful",
@@ -91,15 +87,13 @@ export const createSession = async (userId, token, req) => {
     const userAgent = req.get("User-Agent") || "Unknown";
     const device = userAgent.includes("Mobile") ? "Mobile" : "Desktop";
 
-    const session = await prisma.userSession.create({
-      data: {
-        userId,
-        token,
-        ip,
-        userAgent,
-        device,
-        isActive: true,
-      },
+    const session = await UserSession.create({
+      userId,
+      token,
+      ip,
+      userAgent,
+      device,
+      isActive: true,
     });
 
     return session;
@@ -110,10 +104,7 @@ export const createSession = async (userId, token, req) => {
 
 export const updateSessionActivity = async (token) => {
   try {
-    await prisma.userSession.updateMany({
-      where: { token, isActive: true },
-      data: { lastActive: new Date() },
-    });
+    await UserSession.updateMany({ token, isActive: true }, { $set: { lastActive: new Date() } });
   } catch (error) {
     console.error("Error updating session activity:", error);
   }
@@ -126,18 +117,13 @@ export const getUserSessions = async (req, res) => {
       return res.status(401).json({ error: "No token provided" });
     }
 
-    const session = await prisma.userSession.findFirst({
-      where: { token, isActive: true },
-      include: { user: true },
-    });
+    const session = await UserSession.findOne({ token, isActive: true });
 
     if (!session) {
       return res.status(401).json({ error: "Invalid session" });
     }
-    const sessions = await prisma.userSession.findMany({
-      where: { userId: session.userId, isActive: true },
-      orderBy: { lastActive: "desc" },
-    });
+
+    const sessions = await UserSession.find({ userId: session.userId, isActive: true }).sort({ lastActive: -1 });
 
     res.json({ sessions });
   } catch (error) {
@@ -153,16 +139,15 @@ export const getUserProfile = async (req, res) => {
       return res.status(401).json({ error: "No token provided" });
     }
 
-    const session = await prisma.userSession.findFirst({
-      where: { token, isActive: true },
-      include: { user: true },
-    });
+    const session = await UserSession.findOne({ token, isActive: true });
 
     if (!session) {
       return res.status(401).json({ error: "Invalid session" });
     }
 
-    const { password, ...userWithoutPassword } = session.user;
+    const user = await User.findById(session.userId).lean();
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const { password, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword });
   } catch (error) {
     console.error(error);
@@ -177,14 +162,23 @@ export const logout = async (req, res) => {
       return res.status(401).json({ error: "No token provided" });
     }
 
-    await prisma.userSession.updateMany({
-      where: { token },
-      data: { isActive: false },
-    });
+    await UserSession.updateMany({ token }, { $set: { isActive: false } });
 
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error logging out" });
+  }
+};
+
+export const getDrivers = async (req, res) => {
+  try {
+    const drivers = await User.find({ role: "driver" })
+      .select("name email phone role")
+      .lean();
+    res.json({ drivers });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching drivers" });
   }
 };

@@ -4,7 +4,6 @@
 The **MAD_Backend** repository is the server-side component for the MAD (Mobile Application Development) project. It provides APIs and backend functionality for the corresponding frontend mobile app.
 
 ### Project Structure
-- **`prisma/`**: Prisma schema and migration files for database management.
 - **`src/`**: Main source code containing API endpoints and business logic.
 - **`.gitignore`**: Specifies files and directories ignored by Git.
 - **`package.json`**: Project dependencies and scripts.
@@ -21,6 +20,16 @@ git clone https://github.com/Mario5T/MAD_Backend.git
 3. Run:  
 ```bash
 npm install
-npx prisma migrate dev
-npx prisma generate
+```
+
+Create a `.env` file (optional) to override defaults:
+```
+MONGO_URI="your-mongodb-atlas-uri"
+MONGO_DB="mad_backend"
+JWT_SECRET="your-secret"
+```
+
+Start the server:
+```bash
+npm run dev
 ```

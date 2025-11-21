@@ -4,7 +4,7 @@ import menuRoutes from "./routes/menuRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
 import shuttleRoutes from "./routes/shuttleRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-import prisma from "./db/db.config.js";
+import "./db/db.config.js";
 import fs from "fs";
 
 const app = express();
@@ -21,6 +21,6 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/shuttle", shuttleRoutes);
 app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => res.send("Backend running 🚀"));
-app.listen(3000, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
 });
 

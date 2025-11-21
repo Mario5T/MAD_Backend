@@ -5,27 +5,25 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npx prisma generate",
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "migrate:deploy": "npx prisma migrate deploy"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node src/seed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^6.16.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.3",
     "multer": "^2.0.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "prisma": "^6.16.2"
+    "nodemon": "^3.1.0"
   }
 }
